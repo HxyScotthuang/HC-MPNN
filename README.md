@@ -10,7 +10,7 @@ pip install torch-scatter torch-sparse torch-geometric -f https://data.pyg.org/w
 ```
 
 ## Reproducing the experiments
-To reproduce the experiments, you need to specify the corresponding arguments shown in the src/config.py file. For example, if there is GPU support, then
+To reproduce the experiments of HCNet, you need to specify the corresponding arguments shown in the src/config.py file. For example, if there is GPU support, then
 ```
 python main.py 
 ```
