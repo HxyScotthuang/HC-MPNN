@@ -3,10 +3,11 @@
 This is the official code base for the paper *Link Prediction with Relational Hypergraphs*.
 
 ## Installation
-You can install the dependencies with pip (or conda), and it works with python 3.9+, pytorch 2.1.0, and pytorch-geometric 2.3.0
+You can install the dependencies with pip (or conda), and it works with python 3.9+, pytorch 2.1.0, and pytorch-geometric 2.3.0, tqdm.
 ```
 pip install torch --index-url https://download.pytorch.org/whl/cu121
 pip install torch-scatter torch-sparse torch-geometric -f https://data.pyg.org/whl/torch-2.1.0+cu121.html
+pip install tqdm
 ```
 
 ## Reproducing the experiments
