@@ -6,6 +6,8 @@ class Measure:
         self.mrr   = {"raw": 0.0, "fil": 0.0}
         self.mr    = {"raw": 0.0, "fil": 0.0}
 
+        
+
     def __add__(self, other):
         """
         Add two measure objects

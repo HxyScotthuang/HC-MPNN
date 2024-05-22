@@ -4,6 +4,7 @@ from tqdm import tqdm
 sys.path.append("..")
 from src.utils import *
 from src.config import args
+from src.kge_model import *
 from src.model import *
 from datetime import datetime
 from src.utils import *
@@ -12,7 +13,7 @@ import gc
 from src.tester import Tester
 
 
-def train_and_eval(args, model, dataset, model_state_file, device = "cpu"):
+def train_and_eval(args, model, dataset, model_state_file, logger=None, device = "cpu"):
 
     print("Number of training tuples: {}".format(len(dataset.data["train"])))
     
@@ -36,7 +37,7 @@ def train_and_eval(args, model, dataset, model_state_file, device = "cpu"):
             batch = dataset.next_batch(batch_size=args.batch_size, neg_ratio=args.neg_ratio, mode="train", device=device)
             was_last_batch = dataset.was_last_batch(mode="train")
             targets = batch.labels.float()
-            predictions = model(batch, edge_list, rel_list) 
+            predictions = model(batch, edge_list, rel_list) # output shape: (roughly batch_size * arity, negative_num + 1)
 
             loss = F.binary_cross_entropy_with_logits(predictions, targets, reduction="none")
             neg_weight = torch.ones_like(predictions)
@@ -50,6 +51,7 @@ def train_and_eval(args, model, dataset, model_state_file, device = "cpu"):
             losses.append(loss.item())
             loss.backward()
             
+            # torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_norm)  # clip gradients
             if ((iteration + 1) % args.accum_iter == 0) or was_last_batch:
                 optimizer.step()
                 optimizer.zero_grad()
@@ -59,7 +61,9 @@ def train_and_eval(args, model, dataset, model_state_file, device = "cpu"):
             progress_bar.update(1)
             del batch, targets, predictions, loss
             gc.collect()
-            
+            torch.cuda.empty_cache()
+        
+        
             
         avg_loss = sum(losses) / len(losses)
         print("average binary cross entropy: {}".format(avg_loss))
@@ -67,21 +71,22 @@ def train_and_eval(args, model, dataset, model_state_file, device = "cpu"):
         # evaluation
         if (epoch + 1) % args.eval_every == 0:
             print("valid dataset eval:")
-            mrr_valid = test(model, dataset, log_mode = "valid", device = device)
+            mrr_valid = test(model, dataset, log_mode = "valid", logger=logger, device = device)
 
             if mrr_valid >= best_mrr:
                 best_mrr = mrr_valid
                 torch.save({'state_dict': model.state_dict(), 'epoch': epoch, 'args': args}, model_state_file)
                 print("best_mrr updated(epoch %d)!" %epoch)
         progress_bar.close()  
+        del progress_bar
                 
     print("\nFinal test dataset with best model:...")
-    _ = test(model, dataset, model_name=model_state_file, log_mode = "test", device = device)
+    mrr_test = test(model, dataset, model_name=model_state_file, logger=logger, log_mode = "test", device = device)
 
     return best_mrr
 
     # testing
-def test(model, dataset, model_name = None, log_mode = "test", device = "cpu", test_by_arity = False):
+def test(model, dataset, model_name = None, logger=None, log_mode = "test", device = "cpu", test_by_arity = False):
     if log_mode == "test":
         # test mode: load parameter form file
         checkpoint = torch.load(model_name, map_location=device)
@@ -91,6 +96,7 @@ def test(model, dataset, model_name = None, log_mode = "test", device = "cpu", t
         model = model.to(device)
 
     model.eval()
+    # ranking = []
 
     if log_mode == "test":
         edge_list, rel_list = dataset.data["test_edge_graph"], dataset.data["test_rel_graph"]
@@ -118,12 +124,15 @@ def test(model, dataset, model_name = None, log_mode = "test", device = "cpu", t
         metrics_dict[metric] = score
     metrics_dict['time'] = datetime.strftime(datetime.now(),'%Y-%m-%d %H:%M:%S')
 
+            
     return mrr
 
 
+
 def main():
-    _, model_name, _ = create_working_directory(args)
+    working_dir, model_name, random_num = create_working_directory(args)
     set_rand_seed(args.seed)
+    logger = None # Replace your logger here if wandb or neptune
 
     if args.test:
         model_state_file = args.model_name
@@ -134,7 +143,6 @@ def main():
     # load datasets
     dataset = load_data(args.dataset, device)
     print("num_entities:", dataset.num_ent(), " num_relation:", dataset.num_rel())
-
     # model create
     if args.model == "HC-MPNN":
         model = HC_MPNN(
@@ -148,16 +156,28 @@ def main():
             positional_encoding = args.positional_encoding,
             initialization = args.initialization,
             short_cut = args.short_cut,
+            use_triton = args.use_triton,
             dependent= args.dependent,
+        )
+    elif args.model == "MDistMult":
+        model = MDistMult(
+            dataset = dataset, 
+            emb_dim = args.hidden_dim,
         )
     else:
         raise NotImplementedError("Model {} not implemented".format(args.model))
     
+    if args.model_name != "":
+        checkpoint = torch.load(args.model_name, map_location=device)
+        model.load_state_dict(checkpoint['state_dict'])
+        print("Load Model name: {}. Using best epoch : {}. \n\nargs:{}.".format(args.model_name, checkpoint['epoch'], checkpoint['args']))
+        
+
     model = model.to(device)
     if args.test:
-        test(model, dataset, model_name = model_state_file, log_mode="test",device = device, test_by_arity = args.test_by_arity)
+        test(model, dataset, model_name = model_state_file, logger=logger, log_mode="test",device = device, test_by_arity = args.test_by_arity)
     else:
-        train_and_eval(args, model, dataset, model_state_file, device = device)
+        train_and_eval(args, model, dataset, model_state_file, logger=logger,device = device)
 
     sys.exit()
 

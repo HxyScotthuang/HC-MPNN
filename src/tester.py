@@ -121,12 +121,13 @@ class Tester:
                 queries = self.create_queries(fact, j)
                 for raw_or_fil in settings:
                     r, eidx = self.add_fact_and_shred(fact, queries, raw_or_fil)
+                    # here eidx is with shape [, max_arity]
                     if (self.model_name == "HC-MPNN"):
                         arity_transformed = torch.tensor(arity).to(self.device).expand(r.size(0))
                         r, eidx, arity_transformed = tuple(map(lambda x: x.unsqueeze(0), (r, eidx, arity_transformed)))
                         sim_scores = self.model.inference(r, eidx, arity_transformed, self.edge_list,self.rel_list).squeeze().cpu().data.numpy()
-
-                  
+                    elif (self.model_name == "MDistMult"):
+                        sim_scores = self.model.inference(r.unsqueeze(0), eidx.unsqueeze(0)).squeeze().cpu().data.numpy()
                     rank = self.get_rank(sim_scores)
                     
                     current_rank.update(rank, raw_or_fil)

@@ -19,9 +19,33 @@ will automatically run the best configuration of FB-AUTO, but you can also speci
 
 An example of running WP-IND with GPU support would be 
 ```
-python main.py --dataset WP-IND --lr 5e-3 --num_layer 5 --neg_ratio 10
+python main.py --dataset WP-IND --lr 5e-3 --num_layer 5 --neg_ratio 10 
 ```
 and the one without GPU support would be
 ```
 python main.py --dataset WP-IND --lr 5e-3 --num_layer 5 --neg_ratio 10 --gpu -1
 ```
+
+
+## Using the powerful triton kernel
+
+To scale the model up, we additional implement a powerful Triton kernel for message passing on relational hypergraphs, which you can use now by setting flag ``` --use_triton ```.
+```
+python main.py --dataset WP-IND --lr 5e-3 --num_layer 5 --neg_ratio 10 --use_triton
+```
+
+This will approximately double the speed, and greatly reduce the space complexity from $O(Ed)$ to $O(Vd)$ during the message passing, as we never materialized the messages! 
+
+However, to let this work, you need some additional upgrade for both pytorch_geometric and triton.
+```
+pip install git+https://github.com/pyg-team/pytorch_geometric.git
+pip install -U --index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/Triton-Nightly/pypi/simple/ triton-nightly
+```
+
+## Synthetic Experiment
+
+We have included the synthetic experiment of *HyperCycle* described in the appendix of the paper in **Synthetic.ipynb**. 
+
+## Testing and testing by arity
+
+To use testing by arity (JF17K only), pass in both flags ```--test --test_by_arity ```

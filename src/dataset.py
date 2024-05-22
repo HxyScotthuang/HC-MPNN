@@ -1,7 +1,8 @@
-## Adapted from https://github.com/ServiceNow/HypE/blob/master/dataset.py
+## taken and modified from https://github.com/ServiceNow/HypE/blob/master/dataset.py
 
 import os
 import numpy as np
+import random
 import torch
 import math
 
@@ -25,7 +26,9 @@ class CustomBatch:
         self.bs = bs
     
     def get_fact(self):
+        # result = tuple(self.r) + tuple(self.entities[:,:,i] for i in range(self.entities.shape[-1]))
         return self.r, self.entities
+        # return self.r, self.e1, self.e2, self.e3, self.e4, self.e5, self.e6
     
     def get_label(self):
         return self.labels
@@ -59,7 +62,7 @@ class Dataset:
         self.batch_per_epoch = None
         # id zero means no entity. Entity ids start from 1.
         self.ent2id = {"":0}
-        self.rel2id = {"":0}
+        self.rel2id = {}
         self.data = {}
         print("Loading the dataset {} ....".format(ds_name)) 
         self.data["train_edge"], self.data["train_rel"] = self.read(os.path.join(self.dir, "train.txt"))
@@ -109,7 +112,7 @@ class Dataset:
         else:
             self.data["test_edge_graph"], self.data["test_rel_graph"] = self.data["train_edge_graph"], self.data["train_rel_graph"]
 
-        self.batch_index = {"train": 0} # batch index for training ONLY
+        self.batch_index = {"train": 0} # DISABLED test/valid. 
 
         self.positive_facts_set = list(tuple(t) for t in self.data["train"]) \
                             + list(tuple(t) for t in self.data["test"]) \
@@ -192,6 +195,7 @@ class Dataset:
     def get_numpy_tuples(self, edges, rels):
         return np.array([self.get_numpy_tuple(edge, rel) for edge, rel in zip(edges, rels)])
 
+    ### Extra functions for generating batches
 
     def next_pos_batch(self, batch_size,mode):
         if self.batch_per_epoch is not None:
@@ -201,6 +205,7 @@ class Dataset:
                 self.batch_index[mode] += batch_size
             else:
                 batch = self.data[mode][self.batch_index[mode]: self.batch_index[mode]+batch_size]
+                ### shuffle ###
                 np.random.shuffle(self.data[mode])
                 self.batch_index[mode] = 0
         else:
@@ -209,6 +214,7 @@ class Dataset:
                 self.batch_index[mode] += batch_size
             else:
                 batch = self.data[mode][self.batch_index[mode]:]
+                ### shuffle ###
                 np.random.shuffle(self.data[mode])
                 self.batch_index[mode] = 0
         batch = np.append(batch, np.zeros((len(batch), 1)), axis=1).astype("int") #appending the +1 label
@@ -223,7 +229,7 @@ class Dataset:
        
 
     def generate_neg(self, pos_batch, neg_ratio,  mode="train"):
-        arities = [2+self.max_arity - (t == 0).sum() for t in pos_batch]
+        arities = [2+self.max_arity - (t[1:] == 0).sum() for t in pos_batch]
         assert all([arity > 1 for arity in arities]), "exists a 0 or 1 arity"
         pos_batch[:,-1] = arities
         batches = []
