@@ -72,14 +72,7 @@ class Dataset:
         self.data["test_edge"], self.data["test_rel"] = self.read_test(os.path.join(self.dir, "test.txt"))
 
        
-         # Read the test files by arity, if they exist
-        # If they do, then test output will be displayed by arity
-        if self.name == "JF17K":
-            for i in range(2,7):
-                test_arity = "test_{}".format(i)
-                file_path = os.path.join(self.dir, "test_{}.txt".format(i))
-                self.data[test_arity+"_edge"], self.data[test_arity+"_rel"] = self.read_test(file_path)
-                
+       
         self.data["valid_edge"], self.data["valid_rel"] = self.read(os.path.join(self.dir, "valid.txt"))
         
         if self.inductive_dataset:
@@ -96,11 +89,7 @@ class Dataset:
         self.data["test"] = self.get_numpy_tuples(self.data["test_edge"], self.data["test_rel"])
         self.data["valid"] = self.get_numpy_tuples(self.data["valid_edge"], self.data["valid_rel"])
 
-        if self.name == "JF17K":
-            for i in range(2,7):
-                test_arity = "test_{}".format(i)
-                self.data[test_arity] = self.get_numpy_tuples(self.data[test_arity+"_edge"], self.data[test_arity+"_rel"])
-
+       
         if self.inductive_dataset:
             self.data["aux"] = self.get_numpy_tuples(self.data["aux_edge"], self.data["aux_rel"])
 
@@ -140,18 +129,11 @@ class Dataset:
             lines = f.readlines()
         tuples = []
         relations = []
-        if self.name == "JF17K":
-            for i, line in enumerate(lines):
-                splitted = line.strip().split("\t")[1:]
-                rel, tuple = self.tuple2ids(splitted)
-                tuples.append(tuple)
-                relations.append(rel)
-        else:
-            for i, line in enumerate(lines):
-                splitted = line.strip().split("\t")
-                rel, tuple = self.tuple2ids(splitted)
-                tuples.append(tuple)
-                relations.append(rel)
+        for i, line in enumerate(lines):
+            splitted = line.strip().split("\t")
+            rel, tuple = self.tuple2ids(splitted)
+            tuples.append(tuple)
+            relations.append(rel)
         return tuples, relations
 
     def num_ent(self):

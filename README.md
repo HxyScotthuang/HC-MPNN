@@ -45,7 +45,3 @@ pip install -U --index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/
 ## Synthetic Experiment
 
 We have included the synthetic experiment of *HyperCycle* described in the appendix of the paper in **Synthetic.ipynb**. 
-
-## Testing and testing by arity
-
-To use testing by arity (JF17K only), pass in both flags ```--test --test_by_arity ```

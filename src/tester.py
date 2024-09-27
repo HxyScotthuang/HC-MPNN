@@ -52,8 +52,7 @@ class Tester:
         self.measure_by_arity = {}
         self.meaddsure = Measure()
 
-        # If the dataset is JF17K and we have test data by arity, then
-        # compute test accuracies by arity and show also global result
+
         if test_by_arity:
             # Iterate over test sets by arity
             for cur_arity in range(2,self.dataset.max_arity+1):
