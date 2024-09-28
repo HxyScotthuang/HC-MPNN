@@ -55,8 +55,6 @@ def create_working_directory(args):
 def load_data(dataset, device):
     if dataset in ['FB-AUTO', "Wikipeople"]:
         return Dataset(ds_name=dataset, device=device)
-    elif dataset in ["FB15k-237", "WN18RR"]:
-        return Dataset(ds_name=dataset, device=device, binary_dataset=True)
     elif dataset in ["JF-IND", "WP-IND", "MFB-IND"]:
         return Dataset(ds_name=dataset, device=device, inductive_dataset=True)
     elif dataset in [f"{name}-IND-V{i}" for name in ["FB", "WN"] for i in range(1,5)]:
