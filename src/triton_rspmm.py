@@ -330,8 +330,12 @@ def hyper_relconv_aggregate_sum_kernel_v2u_backward(
         right_prod = tl.cumprod(pos_add_neighbor_j, axis=0, reverse=True)
         # right_prod = tl.cumprod(pos_add_neighbor_j.flip(axis = 0), axis = 0)
         # right_prod = tl.cumprod(tl.flip(pos_add_neighbor_j, axis = 0), axis = 0)
-        rest_j = left_prod * right_prod
-        tl.atomic_add(dh_src + node_index_j_reshape * IN_CHAN + feat_offsets, h_out_grad_reshape * rel_feat_j_reshape * rest_j, feat_valid_mask_array)
+        rest_j = left_prod * right_prod / (pos_add_neighbor_j * pos_add_neighbor_j + 1e-10)
+        rest_j = tl.where(valid_factor_mask, rest_j, feat_zeros_array)
+        aggr_mul *= tl.reduce(pos_add_neighbor_j, axis=0, combine_fn=multiply) 
+
+        
+        tl.atomic_add(dh_src + node_index_j_reshape * IN_CHAN + feat_offsets, h_out_grad_reshape * rel_feat_j_reshape * rest_j, non_zero_mask & feat_valid_mask_array)
         tl.atomic_add(drel_src + edge_type_j * IN_CHAN + feat_offsets, h_out_grad * aggr_mul, feat_valid_mask)
 
         tl.atomic_add(alpha_in_grad, tl.sum(h_out_grad_reshape * neighbor_feat_j))
