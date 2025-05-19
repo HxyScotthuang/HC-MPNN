@@ -1,6 +1,6 @@
 # Link Prediction with Relational Hypergraphs
 
-This is the official code base for the paper **Link Prediction with Relational Hypergraphs**.
+This is the official code base for the paper **Link Prediction with Relational Hypergraphs**. (TMLR 2025/05)
 
 ## Installation
 You can install the dependencies with pip (or conda), and it works with python 3.9+, pytorch 2.1.0, and pytorch-geometric 2.3.0, tqdm.
