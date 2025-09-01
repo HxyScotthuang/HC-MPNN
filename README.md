@@ -45,3 +45,17 @@ pip install -U --index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/
 ## Synthetic Experiment
 
 We have included the synthetic experiment of *HyperCycle* described in the appendix of the paper in **Synthetic.ipynb**. 
+
+## 📖 Citation
+
+If you find this work useful, please consider citing our TMLR 2025 paper:
+
+```bibtex
+@article{huang2025link,
+  title   = {Link Prediction with Relational Hypergraphs},
+  author  = {Xingyue Huang and Miguel Romero Orth and Pablo Barcel{\'o} and Michael M. Bronstein and {\.{I}}smail {\.{I}}lkan Ceylan},
+  journal = {Transactions on Machine Learning Research},
+  issn    = {2835-8856},
+  year    = {2025}
+}
+
